@@ -1,0 +1,36 @@
+version: '3'
+
+services:
+  nginx:
+    build:
+      context: ./nginx
+      dockerfile: Dockerfile
+    container_name: nginx
+    ports:
+      - "8080:80"
+    entrypoint: wait-for db:3306 -t 40 -- ./docker-entrypoint.sh
+    command: nginx -g "daemon off;"
+    depends_on:
+      - app
+  app:
+    build:
+      context: ./node
+    container_name: app
+    entrypoint: wait-for db:3306 -t 40 -- ./start.sh
+    volumes:
+      - ./src:/home/node/app
+    tty: true
+    depends_on:
+      - db
+  db:
+    image: mysql:5.7
+    container_name: db
+    restart: always
+    tty: true
+    volumes:
+      - ./mysql:/var/lib/mysql
+    environment:
+      MYSQL_ROOT_PASSWORD: 'password'
+      MYSQL_DATABASE: 'node_mysql'
+      MYSQL_USER: 'node_user'
+      MYSQL_PASSWORD: 'password'
